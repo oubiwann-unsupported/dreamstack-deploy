@@ -21,10 +21,8 @@ You will need to have Python, pip, and Fabric installed:
 Usage
 -----
 
-With Fabric installed, you're ready to deploy! Here's what you need to do:
+With Fabric installed, you're ready to deploy! Here's what you need to do::
 
-* TBD
-
-* TBD
-
-* TBD
+    $ git clone git@github.com:dreamhost/dreamstack-deploy.git
+    $ cd dreamstack-deploy
+    $ fab deploy
