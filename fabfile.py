@@ -1,5 +1,14 @@
-from fabric.api import local
+from fabric.api import env, run
 
+from dreamstack import target
+
+
+env.hosts = target.servers
+
+
+def check():
+    run("cat /tmp/doesnt/exist")
 
 def deploy():
-    local("ls -al")
+    #check()
+    run("ls -al")
