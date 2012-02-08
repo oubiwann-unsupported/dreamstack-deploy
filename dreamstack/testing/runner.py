@@ -1,8 +1,9 @@
+import optparse
 import os
 import unittest
 
-import util
-import result
+from dreamstack import meta
+from dreamstack.testing import result
 
 
 class CustomTestRunner(unittest.TextTestRunner):
@@ -14,27 +15,34 @@ class CustomTestRunner(unittest.TextTestRunner):
             self.stream, self.descriptions, self.verbosity)
 
 
-def get_suite(loader, top_level_directory):
-    if hasattr(loader, "discover"):
+def discover(loader, top_level_directory):
+    names = []
+
+    def _path_to_module(path):
+        # generate dotted names for file paths
+        path = path.replace(".py", "")
+        return path.replace("/", ".")
+
+    # walk the directory
+    for dirpath, dirnames, filenames in os.walk(top_level_directory):
+        modules = [
+            _path_to_module(os.path.join(dirpath, x)) for x in filenames
+                if x.startswith("test_") and x.endswith(".py")]
+        if not modules:
+            continue
+        names.extend(modules)
+    return loader.loadTestsFromNames(names)
+
+
+def get_suite(loader, top_level_directory, options):
+    if options.test_specific:
+        suite = loader.loadTestsFromName(options.test_specific)
+    elif hasattr(loader, "discover"):
         # Python 2.7
         suite = loader.discover(top_level_directory)
     else:
         # Python 2.4, 2.5, 2.6
-        names = []
-        def _path_to_module(path):
-            # generate dotted names for file paths
-            path = path.replace(".py", "")
-            return path.replace("/", ".")
-
-        # walk the directory
-        for dirpath, dirnames, filenames in os.walk(top_level_directory):
-            modules = [
-                _path_to_module(os.path.join(dirpath, x)) for x in filenames 
-                    if x.startswith("test_") and x.endswith(".py")]
-            if not modules:
-                continue
-            names.extend(modules)
-        suite = loader.loadTestsFromNames(names)
+        suite = discover(loader, top_level_directory)
     return suite
 
 
@@ -49,11 +57,18 @@ def get_runner():
     return runner
 
 
-def run_tests():
+def run_tests(options):
     loader = unittest.TestLoader()
-    suite = get_suite(loader, util.get_top_directory())
+    suite = get_suite(loader, meta.library_name, options)
     get_runner().run(suite)
 
 
+def main():
+    parser = optparse.OptionParser()
+    parser.add_option("--test-specific", dest="test_specific")
+    (options, args) = parser.parse_args()
+    run_tests(options)
+
+
 if __name__ == "__main__":
-    run_tests()
+    main()

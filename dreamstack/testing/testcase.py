@@ -1,9 +1,6 @@
-from ctypes.util import find_library
-import os
 import unittest
 
 import exception
-import util
 
 
 def skip(message):
@@ -30,7 +27,9 @@ class Non26BaseTestCase(unittest.TestCase):
             self.assertIn = self._assertIn26
 
     def _assertIn26(self, member, container, msg=None):
-        """Just like self.assertTrue(a in b), but with a nicer default message."""
+        """
+        Just like self.assertTrue(a in b), but with a nicer default message.
+        """
         if member not in container:
             standardMsg = '%s not found in %s' % (repr(member),
                                                   repr(container))
