@@ -13,9 +13,10 @@ class Persona(object):
     def __init__(self, install_path="./", method=""):
         self.install_path = install_path
         self.method = method
-        self._main_package = base.Software(
+        self._main_package = base.softwareFactory(
             self.main_package_uri, install_path, method)
-        self._parent = base.Software(self.parent_uri, install_path, method)
+        self._parent = base.softwareFactory(
+            self.parent_uri, install_path, method)
         self._deps = base.SoftwareCollection(
             self.dependency_uris, install_path, method)
 
