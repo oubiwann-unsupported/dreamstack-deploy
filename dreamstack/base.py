@@ -1,4 +1,6 @@
-import urllib2 import urlparse
+from urllib2 import urlparse
+
+from fabric.api import cd, local, run
 
 
 class Software(object):
@@ -7,20 +9,30 @@ class Software(object):
     uri = "type://path-or-uri"
     _type = ""
     _uri = ""
+    _install_path = ""
+    _execute = ""
 
-    def __init__(self, uri=None):
+    def __init__(self, uri=None, install_path="", method=""):
         if uri:
             self.uri = uri
-        self._uri = self.uri.split("://")[1]
+        self.parsed_uri = urlparse.urlparse(self.uri)
+        self._install_path = install_path
+        if method == "local":
+            self._execute = local
+        elif method == "remote":
+            self._execute = run
 
     @property
-    def type(self):
-        if not self._type:
-            self._type = urlparse.urlparse(self.uri)[0]
-        return self._type
+    def scheme(self):
+        return self.parsed_uri.scheme
+
+    @property
+    def git_project(self):
+        return self.parsed_uri.path
 
     def _install_git(self):
-        pass
+        with cd(self.install_path):
+            self._execute("git clone %s" % self._uri)
 
     def _install_python(self):
         pass
@@ -29,26 +41,34 @@ class Software(object):
         pass
 
     def install(self):
-        if self.type == "git":
+        if self.scheme == "git":
             self._install_git()
-        elif self.type == "python":
+        elif self.scheme == "python":
             self._install_python()
-        elif self.type == "git+python":
+        elif self.scheme == "git+python":
             self._install_git_python()
+
+    def git_pull(self):
+        pass
+
+    def git_push(self):
+        pass
 
 
 class SoftwareCollection(object):
     """
     """
-    def __init__(self, uris=None)
+    def __init__(self, uris=None, install_path="", method=""):
         if not uris:
             uris = []
         self.uris = uris
+        self.install_path = install_path
+        self.method = method
 
     def append(self, *args, **kwargs):
         self.uris.append(*args, **kwargs)
 
     def install(self):
         for uri in self.uris:
-            software = Software(uri)
+            software = Software(uri, self.install_path, self.method)
             software.install()
