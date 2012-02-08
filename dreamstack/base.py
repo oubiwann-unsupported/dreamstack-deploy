@@ -28,7 +28,10 @@ class Software(object):
 
     @property
     def git_project(self):
-        return self.parsed_uri.path
+        project = self.parsed_uri.path
+        if project.startswith("/") and project.endswith(".git"):
+            project = project[1:-4]
+        return project
 
     def _install_git(self):
         with cd(self.install_path):
