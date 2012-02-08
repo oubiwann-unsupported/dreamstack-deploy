@@ -1,3 +1,4 @@
+version = 0.1
 display_name = "DreamStack-Deploy"
 library_name = "dreamstack"
 author = "Duncan McGreggor"
