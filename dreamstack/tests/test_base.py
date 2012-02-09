@@ -112,6 +112,11 @@ class SoftwareFactoryTestCase(TestCase):
         software = base.softwareFactory("git://host:team/project.git")
         self.assertTrue(isinstance(software, base.GitSoftware))
 
+    def test_read_only_git_software(self):
+        software = base.softwareFactory("ro+git://host:team/project.git")
+        self.assertTrue(isinstance(software, base.BaseGitSoftware))
+        self.assertTrue(isinstance(software, base.ReadOnlyGitSoftware))
+
     def test_git_python_software(self):
         software = base.softwareFactory("git+python://host:team/project.git")
         self.assertTrue(isinstance(software, base.GitSoftware))

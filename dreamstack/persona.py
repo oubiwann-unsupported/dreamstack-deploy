@@ -17,7 +17,7 @@ class Persona(object):
     def __init__(self, install_path="./", method=""):
         self.install_path = install_path
         self.method = method
-        self._main_package = base.GitSoftware(
+        self._main_package = base.softwareFactory(
             self.main_package, self.upstream_package, install_path, method)
         self._deps = base.SoftwareCollection(
             self.dependencies, install_path, method)
