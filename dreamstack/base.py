@@ -1,26 +1,24 @@
+import os
 from urllib2 import urlparse
 
 from fabric.api import cd, local, run
 
 
-class Software(object):
-    """
-    """
-    uri = "type://path-or-uri"
-    install_path = ""
-    _type = ""
-    _uri = ""
-    _execute = ""
+dreamstack_schemes = ["git", "python", "git+python", "apt-get"]
+urlparse.uses_relative.extend(dreamstack_schemes)
+urlparse.uses_netloc.extend(dreamstack_schemes)
+urlparse.non_hierarchical.extend(dreamstack_schemes)
+urlparse.uses_params.extend(dreamstack_schemes)
+urlparse.uses_query.extend(dreamstack_schemes)
+urlparse.uses_fragment.extend(dreamstack_schemes)
 
-    def __init__(self, uri=None, install_path="", method=""):
-        if uri:
-            self.uri = uri
-        self.parsed_uri = urlparse.urlparse(self.uri)
-        self.install_path = install_path
-        if method == "local":
-            self._execute = local
-        elif method == "remote":
-            self._execute = run
+
+class BaseSoftware(object):
+    """
+    """
+    def __init__(self, uri="type://uri"):
+        self.uri = uri
+        self.parsed_uri = urlparse.urlparse(self.uri, scheme="http")
 
     @property
     def scheme(self):
@@ -30,11 +28,36 @@ class Software(object):
     def path(self):
         return self.parsed_uri.path
 
+    @property
+    def query(self):
+        return urlparse.parse_qs(self.parsed_uri.query)
+
+
+class ReadOnlySoftware(BaseSoftware):
+    """
+    """
+
+
+class Software(BaseSoftware):
+    """
+    """
+    _execute = ""
+
+    def __init__(self, uri="type://uri", upstream="type://uri",
+                 install_path="", method="local"):
+        super(Software, self).__init__(uri=uri)
+        self.upstream = ReadOnlySoftware(upstream)
+        self.install_path = install_path
+        if method == "local":
+            self._execute = local
+        elif method == "remote":
+            self._execute = run
+
     def install(self):
         """
         Subclasses need to implement this method.
         """
-        raise NotImplementedError(self.instal.__doc__)
+        raise NotImplementedError(self.install.__doc__)
 
 
 class AptGetSoftware(Software):
@@ -58,21 +81,43 @@ class GitSoftware(Software):
             project = project[1:-4]
         return project
 
+    @property
+    def tag(self):
+        return self.query.get("tag")[0]
+
+    @property
+    def commit_id(self):
+        return self.parsed_uri.fragment
+
+    @property
+    def project_dir(self):
+        return os.path.join(self.install_path, self.project)
+
     def pull(self):
-        pass
+        with cd(self.project_dir):
+            self._execute("git pull origin master")
 
     def push(self):
-        pass
+        with cd(self.project_dir):
+            self._execute("git push origin master")
+
+    def checkout_tag(self):
+        with cd(self.project_dir):
+            self._execute("git checkout tags/%s" % self.tag)
 
     def install(self):
         with cd(self.install_path):
-            self._execute("git clone %s" % self._uri)
-        
+            self._execute("git clone %s" % self.uri)
 
 
 class GitPythonSoftware(PythonSoftware, GitSoftware):
     """
+    Same as the GitSoftware class, except that this one also intsalls the
+    Python project in the system library.
     """
+    def install(self):
+        GitSoftware.install(self)
+        PythonSoftware.install(self)
 
 
 def softwareFactory(uri, *args, **kwargs):
@@ -82,6 +127,12 @@ def softwareFactory(uri, *args, **kwargs):
         return GitPythonSoftware(uri, *args, **kwargs)
     elif uri.startswith("git://"):
         return GitSoftware(uri, *args, **kwargs)
+    elif uri.startswith("python://"):
+        return PythonSoftware(uri, *args, **kwargs)
+    elif uri.startswith("apt-get://"):
+        return AptGetSoftware(uri, *args, **kwargs)
+    else:
+        raise ValueError("Unknown software type for uri '%s'" % uri)
 
 
 class SoftwareCollection(object):
@@ -99,5 +150,7 @@ class SoftwareCollection(object):
 
     def install(self):
         for uri in self.uris:
-            software = softwareFactory(uri, self.install_path, self.method)
+            software = softwareFactory(
+                uri=uri, upstream=None, install_path=self.install_path,
+                method=self.method)
             software.install()

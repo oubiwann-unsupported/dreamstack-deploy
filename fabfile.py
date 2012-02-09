@@ -16,6 +16,4 @@ def build_local_checkouts():
     local("mkdir -p %s" % base_dir)
     for klass in persona.openstack:
         component = klass(install_path=base_dir, method="local")
-        print component
-        print component.__dict__
         component.install()
