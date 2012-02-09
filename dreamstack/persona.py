@@ -31,8 +31,10 @@ class Persona(object):
 class NovaPersona(Persona):
     """
     """
-    main_package = "git://git@github.com:dreamhost/nova.git"
-    upstream_package = "git://git@github.com:openstack/nova.git"
+    #main_package = "git://git@github.com:dreamhost/nova.git"
+    #upstream_package = "git://git@github.com:openstack/nova.git"
+    main_package = "git://git@github.com:dreamhost/dreamstack-deploy.git"
+    upstream_package = "git://git@github.com:oubiwann/dreamstack-deploy.git"
     dependencies = []
 
 

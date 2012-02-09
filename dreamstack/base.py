@@ -1,7 +1,7 @@
 import os
 from urllib2 import urlparse
 
-from fabric.api import cd, local, run
+from fabric.api import cd, lcd, local, run
 
 
 dreamstack_schemes = ["git", "ro+git", "python", "git+python", "apt-get"]
@@ -50,8 +50,10 @@ class Software(BaseSoftware):
         self.install_path = install_path
         if method == "local":
             self._execute = local
+            self._cd = lcd
         elif method == "remote":
             self._execute = run
+            self._cd = cd
 
     def install(self):
         """
@@ -75,6 +77,10 @@ class BaseGitSoftware(BaseSoftware):
     This class consolidates methods and data particular to git repos.
     """
     @property
+    def git_url(self):
+        return self.uri.split("git://")[1]
+
+    @property
     def project(self):
         project = self.parsed_uri.path
         if project.startswith("/") and project.endswith(".git"):
@@ -91,14 +97,19 @@ class BaseGitSoftware(BaseSoftware):
 
     @property
     def project_dir(self):
-        return os.path.join(self.install_path, self.project)
+        return os.path.expanduser(
+            os.path.join(self.install_path, self.project))
+
+    @property
+    def project_exists(self):
+        return os.path.exists(self.project_dir)
 
     def pull(self):
-        with cd(self.project_dir):
+        with self._cd(self.project_dir):
             self._execute("git pull origin master")
 
     def checkout_tag(self):
-        with cd(self.project_dir):
+        with self._cd(self.project_dir):
             self._execute("git checkout tags/%s" % self.tag)
 
 
@@ -110,13 +121,19 @@ class ReadOnlyGitSoftware(BaseGitSoftware):
 class GitSoftware(BaseGitSoftware, Software):
     """
     """
+    def clone(self):
+        with self._cd(self.install_path):
+            self._execute("git clone '%s'" % self.git_url)
+
     def push(self):
-        with cd(self.project_dir):
+        with self._cd(self.project_dir):
             self._execute("git push origin master")
 
     def install(self):
-        with cd(self.install_path):
-            self._execute("git clone '%s'" % self.uri)
+        if self.project_exists:
+            self.pull()
+        else:
+            self.clone()
 
 
 class GitPythonSoftware(PythonSoftware, GitSoftware):
@@ -124,6 +141,10 @@ class GitPythonSoftware(PythonSoftware, GitSoftware):
     Same as the GitSoftware class, except that this one also intsalls the
     Python project in the system library.
     """
+    @property
+    def git_url(self):
+        return self.uri.split("git+python://")[1]
+
     def install(self):
         GitSoftware.install(self)
         PythonSoftware.install(self)
@@ -133,19 +154,14 @@ def softwareFactory(uri, *args, **kwargs):
     """
     """
     if uri.startswith("git+python://"):
-        uri = uri.split("git+python://")[1]
         return GitPythonSoftware(uri, *args, **kwargs)
     elif uri.startswith("git://"):
-        uri = uri.split("git://")[1]
         return GitSoftware(uri, *args, **kwargs)
     elif uri.startswith("ro+git://"):
-        uri = uri.split("ro+git://")[1]
         return ReadOnlyGitSoftware(uri, *args, **kwargs)
     elif uri.startswith("python://"):
-        uri = uri.split("python://")[1]
         return PythonSoftware(uri, *args, **kwargs)
     elif uri.startswith("apt-get://"):
-        uri = uri.split("apt-get://")[1]
         return AptGetSoftware(uri, *args, **kwargs)
     else:
         raise ValueError("Unknown software type for uri '%s'" % uri)
