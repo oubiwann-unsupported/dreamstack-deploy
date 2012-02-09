@@ -12,4 +12,5 @@ class PersonaTestCase(TestCase):
     def test_creation(self):
         self.assertEqual(self.persona._main_package.uri, "git://uri")
         self.assertEqual(self.persona._main_package.install_path, "./")
-        self.assertEqual(self.persona._main_package.upstream.uri, "ro+git://uri")
+        self.assertEqual(
+            self.persona._main_package.upstream.uri, "ro+git://uri")

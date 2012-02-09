@@ -13,7 +13,8 @@ class SoftwareTestCase(TestCase):
 
     def test_parsed_uri(self):
         self.assertEqual(self.software.parsed_uri.scheme, "http")
-        self.assertEqual(self.software.parsed_uri.netloc, "user:pass@host:port")
+        self.assertEqual(
+            self.software.parsed_uri.netloc, "user:pass@host:port")
         self.assertEqual(self.software.parsed_uri.path, "/path/to/some.thing")
         self.assertEqual(self.software.parsed_uri.params, "x;y;z")
         self.assertEqual(self.software.parsed_uri.query, "query=hey!")
@@ -23,11 +24,9 @@ class SoftwareTestCase(TestCase):
         self.assertEqual(self.software.scheme, "http")
 
     def test_path(self):
-        sw = base.Software()
         self.assertEqual(self.software.path, "/path/to/some.thing")
 
     def test_query(self):
-        sw = base.Software()
         self.assertEqual(self.software.query["query"], ["hey!"])
 
     def test_install(self):
@@ -59,7 +58,6 @@ class GitSoftwareTestCase(SoftwareTestCase):
         self.assertEqual(self.software.scheme, "git")
 
     def test_path(self):
-        sw = base.Software()
         self.assertEqual(self.software.path, "/cool-project.git")
 
     def test_project(self):
